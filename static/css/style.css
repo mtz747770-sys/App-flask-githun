@@ -370,11 +370,13 @@ h1 {
 
 .tiempo {
     font-family: var(--fuente-mono);
-    font-size: 14px;
+    font-size: 40px;
     color: var(--advertencia);
     font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
 }
-
 .cuerpo-terminal {
     padding: 32px;
     min-height: 180px;
