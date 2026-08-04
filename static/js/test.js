@@ -1,5 +1,5 @@
 const datosTexto = JSON.parse(document.getElementById("texto-datos").textContent);
-const oraciones = dividirEnOraciones(datosTexto);
+const palabras = datosTexto.split(/\s+/).filter(Boolean);
 
 const contenedorTexto = document.getElementById("texto-prueba");
 const entrada = document.getElementById("entrada-usuario");
@@ -17,34 +17,27 @@ let intervalo = null;
 let pruebaIniciada = false;
 let pruebaTerminada = false;
 
-function dividirEnOraciones(texto) {
-    const oracionesEncontradas = texto
-        .replace(/\n+/g, " ")
-        .match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
-    return (oracionesEncontradas || []).map((oracion) => oracion.trim()).filter(Boolean);
-}
-
-function obtenerOracionObjetivo() {
-    return oraciones[indiceActual] || "";
+function obtenerPalabraObjetivo() {
+    return palabras[indiceActual] || "";
 }
 
 function dibujarTexto() {
-    const oracion = obtenerOracionObjetivo();
-    contenedorTexto.innerHTML = oracion
+    const palabra = obtenerPalabraObjetivo();
+    contenedorTexto.innerHTML = palabra
         .split("")
         .map((letra) => `<span class="letra">${letra}</span>`)
         .join("");
 }
 
-function actualizarLetrasOracionActual() {
-    const oracionObjetivo = obtenerOracionObjetivo();
+function actualizarLetrasPalabraActual() {
+    const palabraObjetivo = obtenerPalabraObjetivo();
     const letras = contenedorTexto.querySelectorAll(".letra");
     const escrito = entrada.value;
 
     letras.forEach((letraElemento, indice) => {
         letraElemento.classList.remove("correcta", "incorrecta", "cursor");
         if (indice < escrito.length) {
-            letraElemento.classList.add(escrito[indice] === oracionObjetivo[indice] ? "correcta" : "incorrecta");
+            letraElemento.classList.add(escrito[indice] === palabraObjetivo[indice] ? "correcta" : "incorrecta");
         } else if (indice === escrito.length) {
             letraElemento.classList.add("cursor");
         }
@@ -84,51 +77,51 @@ function finalizarPrueba() {
     });
 }
 
-function procesarOracion() {
+function procesarPalabra() {
     const escrita = entrada.value.trim();
-    const oracionObjetivo = obtenerOracionObjetivo();
+    const palabraObjetivo = obtenerPalabraObjetivo();
 
-    if (!oracionObjetivo) {
+    if (!palabraObjetivo) {
         return;
     }
 
     const letras = contenedorTexto.querySelectorAll(".letra");
     letras.forEach((letraElemento, indice) => {
         letraElemento.classList.remove("cursor");
-        const correcta = indice < escrita.length && escrita[indice] === oracionObjetivo[indice];
+        const correcta = indice < escrita.length && escrita[indice] === palabraObjetivo[indice];
         letraElemento.classList.toggle("correcta", correcta);
         letraElemento.classList.toggle("incorrecta", !correcta);
     });
 
-    const esCorrecta = escrita === oracionObjetivo;
+    const esCorrecta = escrita === palabraObjetivo;
     if (esCorrecta && !contenedorTexto.dataset.contada) {
-        palabrasCorrectas += oracionObjetivo.split(/\s+/).filter(Boolean).length;
+        palabrasCorrectas += 1;
         contenedorTexto.dataset.contada = "1";
     }
 
     indiceActual += 1;
     entrada.value = "";
-    barraProgreso.style.width = `${(indiceActual / oraciones.length) * 100}%`;
+    barraProgreso.style.width = `${(indiceActual / palabras.length) * 100}%`;
 
-    if (indiceActual >= oraciones.length) {
+    if (indiceActual >= palabras.length) {
         finalizarPrueba();
         return;
     }
 
     contenedorTexto.removeAttribute("data-contada");
     dibujarTexto();
-    actualizarLetrasOracionActual();
+    actualizarLetrasPalabraActual();
 }
 
-function retrocederOracion() {
+function retrocederPalabra() {
     if (indiceActual === 0) {
         return;
     }
 
     indiceActual -= 1;
-    barraProgreso.style.width = `${(indiceActual / oraciones.length) * 100}%`;
+    barraProgreso.style.width = `${(indiceActual / palabras.length) * 100}%`;
     dibujarTexto();
-    actualizarLetrasOracionActual();
+    actualizarLetrasPalabraActual();
 }
 
 entrada.addEventListener("input", (evento) => {
@@ -141,7 +134,12 @@ entrada.addEventListener("input", (evento) => {
         iniciarCuentaRegresiva();
     }
 
-    actualizarLetrasOracionActual();
+    if (evento.target.value.endsWith(" ")) {
+        procesarPalabra();
+        return;
+    }
+
+    actualizarLetrasPalabraActual();
 });
 
 entrada.addEventListener("keydown", (evento) => {
@@ -152,14 +150,14 @@ entrada.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
         evento.preventDefault();
         if (entrada.value.trim().length > 0) {
-            procesarOracion();
+            procesarPalabra();
         }
         return;
     }
 
     if (evento.key === "Backspace" && entrada.value.length === 0 && indiceActual > 0) {
         evento.preventDefault();
-        retrocederOracion();
+        retrocederPalabra();
     }
 });
 
