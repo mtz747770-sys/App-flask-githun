@@ -12,7 +12,7 @@ const contadorRacha = document.getElementById("contador-racha");
 
 const DURACION_SEGUNDOS = 60;
 
-let indiceActual = 0;
+let indicePalabraActual = 0;
 let palabrasCorrectas = 0;
 let rachaActual = 0;
 let tiempoRestante = DURACION_SEGUNDOS;
@@ -20,34 +20,30 @@ let intervalo = null;
 let pruebaIniciada = false;
 let pruebaTerminada = false;
 
-function dividirEnOraciones(texto) {
-    const oracionesEncontradas = texto
-        .replace(/\n+/g, " ")
-        .match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
-    return (oracionesEncontradas || []).map((oracion) => oracion.trim()).filter(Boolean);
-}
-
-function obtenerOracionObjetivo() {
-    return oraciones[indiceActual] || "";
+function obtenerPalabraObjetivo() {
+    return palabras[indicePalabraActual] || "";
 }
 
 function dibujarTexto() {
-    const oracion = obtenerOracionObjetivo();
-    contenedorTexto.innerHTML = oracion
+    const palabra = obtenerPalabraObjetivo();
+    contenedorTexto.innerHTML = palabra
         .split("")
         .map((letra) => `<span class="letra">${letra}</span>`)
         .join("");
 }
 
-function actualizarLetrasOracionActual() {
-    const oracionObjetivo = obtenerOracionObjetivo();
+function actualizarLetrasPalabraActual() {
     const letras = contenedorTexto.querySelectorAll(".letra");
-    const escrito = entrada.value;
+    const palabraObjetivo = obtenerPalabraObjetivo();
+    const escrito = entrada.value.replace(/\s+$/, "");
 
     letras.forEach((letraElemento, indice) => {
         letraElemento.classList.remove("correcta", "incorrecta", "cursor");
+
         if (indice < escrito.length) {
-            letraElemento.classList.add(escrito[indice] === palabraObjetivo[indice] ? "correcta" : "incorrecta");
+            letraElemento.classList.add(
+                escrito[indice] === palabraObjetivo[indice] ? "correcta" : "incorrecta"
+            );
         } else if (indice === escrito.length) {
             letraElemento.classList.add("cursor");
         }
@@ -60,9 +56,8 @@ function actualizarRacha() {
     if (rachaActual >= 4) {
         contadorRacha.textContent = rachaActual;
         indicadorRacha.classList.remove("oculto");
-        
         indicadorRacha.classList.remove("animar-racha");
-        void indicadorRacha.offsetWidth; 
+        void indicadorRacha.offsetWidth;
         indicadorRacha.classList.add("animar-racha");
     } else {
         indicadorRacha.classList.add("oculto");
@@ -80,9 +75,7 @@ function iniciarCuentaRegresiva() {
 }
 
 function finalizarPrueba() {
-    if (pruebaTerminada) {
-        return;
-    }
+    if (pruebaTerminada) return;
     pruebaTerminada = true;
 
     clearInterval(intervalo);
@@ -104,55 +97,41 @@ function finalizarPrueba() {
 
 function procesarPalabra() {
     const escrita = entrada.value.trim();
-    const oracionObjetivo = obtenerOracionObjetivo();
+    const palabraObjetivo = obtenerPalabraObjetivo();
 
-    if (!oracionObjetivo) {
-        return;
+    if (!palabraObjetivo) return;
+
+    if (escrita === palabraObjetivo) {
+        palabrasCorrectas += 1;
+        rachaActual += 1;
+    } else {
+        rachaActual = 0;
     }
 
-    const letras = contenedorTexto.querySelectorAll(".letra");
-    letras.forEach((letraElemento, indice) => {
-        letraElemento.classList.remove("cursor");
-        const correcta = indice < escrita.length && escrita[indice] === oracionObjetivo[indice];
-        letraElemento.classList.toggle("correcta", correcta);
-        letraElemento.classList.toggle("incorrecta", !correcta);
-    });
+    actualizarRacha();
 
-    const esCorrecta = escrita === oracionObjetivo;
-    if (esCorrecta && !contenedorTexto.dataset.contada) {
-        palabrasCorrectas += oracionObjetivo.split(/\s+/).filter(Boolean).length;
-        contenedorTexto.dataset.contada = "1";
-    }
-
-    indiceActual += 1;
+    indicePalabraActual += 1;
     entrada.value = "";
-    barraProgreso.style.width = `${(indiceActual / palabras.length) * 100}%`;
 
-    if (indiceActual >= palabras.length) {
+    if (indicePalabraActual >= palabras.length) {
         finalizarPrueba();
         return;
     }
 
-    contenedorTexto.removeAttribute("data-contada");
     dibujarTexto();
-    actualizarLetrasOracionActual();
+    barraProgreso.style.width = `${(indicePalabraActual / palabras.length) * 100}%`;
 }
 
-function retrocederOracion() {
-    if (indiceActual === 0) {
-        return;
-    }
+function retrocederPalabra() {
+    if (indicePalabraActual === 0) return;
 
-    indiceActual -= 1;
-    barraProgreso.style.width = `${(indiceActual / oraciones.length) * 100}%`;
+    indicePalabraActual -= 1;
     dibujarTexto();
-    actualizarLetrasOracionActual();
+    barraProgreso.style.width = `${(indicePalabraActual / palabras.length) * 100}%`;
 }
 
 entrada.addEventListener("input", (evento) => {
-    if (pruebaTerminada) {
-        return;
-    }
+    if (pruebaTerminada) return;
 
     if (!pruebaIniciada) {
         pruebaIniciada = true;
@@ -168,19 +147,17 @@ entrada.addEventListener("input", (evento) => {
 });
 
 entrada.addEventListener("keydown", (evento) => {
-    if (pruebaTerminada) {
-        return;
-    }
+    if (pruebaTerminada) return;
 
     if (evento.key === "Enter") {
         evento.preventDefault();
         if (entrada.value.trim().length > 0) {
-            procesarOracion();
+            procesarPalabra();
         }
         return;
     }
 
-    if (evento.key === "Backspace" && entrada.value.length === 0 && indiceActual > 0) {
+    if (evento.key === "Backspace" && entrada.value.length === 0 && indicePalabraActual > 0) {
         evento.preventDefault();
         retrocederPalabra();
     }
