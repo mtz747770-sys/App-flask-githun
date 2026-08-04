@@ -370,13 +370,11 @@ h1 {
 
 .tiempo {
     font-family: var(--fuente-mono);
-    font-size: 40px;
+    font-size: 14px;
     color: var(--advertencia);
     font-weight: 700;
-    line-height: 1;
-    display: flex;
-    align-items: center;
 }
+
 .cuerpo-terminal {
     padding: 32px;
     min-height: 180px;
@@ -498,4 +496,33 @@ h1 {
     font-weight: 700;
     color: var(--acento);
     margin: 8px 0 24px;
+}
+
+/* Indicador y animación de racha */
+.indicador-racha {
+    font-family: var(--fuente-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: #ff9f43;
+    background: rgba(255, 159, 67, 0.15);
+    border: 1px solid #ff9f43;
+    padding: 2px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.indicador-racha.animar-racha {
+    animation: popRacha 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popRacha {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+.oculto {
+    display: none !important;
 }

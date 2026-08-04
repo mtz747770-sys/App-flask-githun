@@ -1,5 +1,5 @@
 const datosTexto = JSON.parse(document.getElementById("texto-datos").textContent);
-const oraciones = dividirEnOraciones(datosTexto);
+const palabras = datosTexto.split(/\s+/).filter(Boolean);
 
 const contenedorTexto = document.getElementById("texto-prueba");
 const entrada = document.getElementById("entrada-usuario");
@@ -7,48 +7,74 @@ const marcadorTiempo = document.getElementById("tiempo-restante");
 const barraProgreso = document.getElementById("barra-progreso");
 const pantallaResultado = document.getElementById("pantalla-resultado");
 const valorWpm = document.getElementById("valor-wpm");
+const indicadorRacha = document.getElementById("indicador-racha");
+const contadorRacha = document.getElementById("contador-racha");
 
 const DURACION_SEGUNDOS = 60;
 
 let indiceActual = 0;
 let palabrasCorrectas = 0;
+let rachaActual = 0;
 let tiempoRestante = DURACION_SEGUNDOS;
 let intervalo = null;
 let pruebaIniciada = false;
 let pruebaTerminada = false;
 
-function dividirEnOraciones(texto) {
-    const oracionesEncontradas = texto
-        .replace(/\n+/g, " ")
-        .match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
-    return (oracionesEncontradas || []).map((oracion) => oracion.trim()).filter(Boolean);
-}
-
-function obtenerOracionObjetivo() {
-    return oraciones[indiceActual] || "";
-}
-
 function dibujarTexto() {
-    const oracion = obtenerOracionObjetivo();
-    contenedorTexto.innerHTML = oracion
-        .split("")
-        .map((letra) => `<span class="letra">${letra}</span>`)
-        .join("");
+    contenedorTexto.innerHTML = palabras
+        .map((palabra, indice) => {
+            const letras = palabra
+                .split("")
+                .map((letra) => `<span class="letra">${letra}</span>`)
+                .join("");
+            return `<span class="palabra" data-indice="${indice}">${letras}</span>`;
+        })
+        .join(" ");
+    marcarPalabraActual();
 }
 
-function actualizarLetrasOracionActual() {
-    const oracionObjetivo = obtenerOracionObjetivo();
-    const letras = contenedorTexto.querySelectorAll(".letra");
+function marcarPalabraActual() {
+    document.querySelectorAll(".palabra").forEach((elemento) => elemento.classList.remove("actual"));
+    const elementoActual = document.querySelector(`.palabra[data-indice="${indiceActual}"]`);
+    if (elementoActual) {
+        elementoActual.classList.add("actual");
+        elementoActual.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+}
+
+function actualizarLetrasPalabraActual() {
+    const elementoActual = document.querySelector(`.palabra[data-indice="${indiceActual}"]`);
+    if (!elementoActual) {
+        return;
+    }
+
+    const palabraObjetivo = palabras[indiceActual];
+    const letras = elementoActual.querySelectorAll(".letra");
     const escrito = entrada.value;
 
     letras.forEach((letraElemento, indice) => {
         letraElemento.classList.remove("correcta", "incorrecta", "cursor");
         if (indice < escrito.length) {
-            letraElemento.classList.add(escrito[indice] === oracionObjetivo[indice] ? "correcta" : "incorrecta");
+            letraElemento.classList.add(escrito[indice] === palabraObjetivo[indice] ? "correcta" : "incorrecta");
         } else if (indice === escrito.length) {
             letraElemento.classList.add("cursor");
         }
     });
+}
+
+function actualizarRacha() {
+    if (!indicadorRacha || !contadorRacha) return;
+
+    if (rachaActual >= 4) {
+        contadorRacha.textContent = rachaActual;
+        indicadorRacha.classList.remove("oculto");
+        
+        indicadorRacha.classList.remove("animar-racha");
+        void indicadorRacha.offsetWidth; 
+        indicadorRacha.classList.add("animar-racha");
+    } else {
+        indicadorRacha.classList.add("oculto");
+    }
 }
 
 function iniciarCuentaRegresiva() {
@@ -84,51 +110,66 @@ function finalizarPrueba() {
     });
 }
 
-function procesarOracion() {
+function procesarPalabra() {
     const escrita = entrada.value.trim();
-    const oracionObjetivo = obtenerOracionObjetivo();
+    const elementoActual = document.querySelector(`.palabra[data-indice="${indiceActual}"]`);
+    const palabraObjetivo = palabras[indiceActual];
 
-    if (!oracionObjetivo) {
-        return;
-    }
+    if (elementoActual) {
+        const letras = elementoActual.querySelectorAll(".letra");
+        letras.forEach((letraElemento, indice) => {
+            letraElemento.classList.remove("cursor");
+            const correcta = indice < escrita.length && escrita[indice] === palabraObjetivo[indice];
+            letraElemento.classList.toggle("correcta", correcta);
+            letraElemento.classList.toggle("incorrecta", !correcta);
+        });
 
-    const letras = contenedorTexto.querySelectorAll(".letra");
-    letras.forEach((letraElemento, indice) => {
-        letraElemento.classList.remove("cursor");
-        const correcta = indice < escrita.length && escrita[indice] === oracionObjetivo[indice];
-        letraElemento.classList.toggle("correcta", correcta);
-        letraElemento.classList.toggle("incorrecta", !correcta);
-    });
+        const esCorrecta = escrita === palabraObjetivo;
+        elementoActual.classList.toggle("correcta", esCorrecta);
+        elementoActual.classList.toggle("incorrecta", !esCorrecta);
 
-    const esCorrecta = escrita === oracionObjetivo;
-    if (esCorrecta && !contenedorTexto.dataset.contada) {
-        palabrasCorrectas += oracionObjetivo.split(/\s+/).filter(Boolean).length;
-        contenedorTexto.dataset.contada = "1";
+        if (esCorrecta) {
+            if (!elementoActual.dataset.contada) {
+                palabrasCorrectas += 1;
+                elementoActual.dataset.contada = "1";
+            }
+            rachaActual += 1;
+        } else {
+            rachaActual = 0;
+        }
+
+        actualizarRacha();
     }
 
     indiceActual += 1;
     entrada.value = "";
-    barraProgreso.style.width = `${(indiceActual / oraciones.length) * 100}%`;
+    barraProgreso.style.width = `${(indiceActual / palabras.length) * 100}%`;
 
-    if (indiceActual >= oraciones.length) {
+    if (indiceActual >= palabras.length) {
         finalizarPrueba();
         return;
     }
 
-    contenedorTexto.removeAttribute("data-contada");
-    dibujarTexto();
-    actualizarLetrasOracionActual();
+    marcarPalabraActual();
 }
 
-function retrocederOracion() {
-    if (indiceActual === 0) {
+function retrocederPalabra() {
+    const palabraAnterior = document.querySelector(`.palabra[data-indice="${indiceActual - 1}"]`);
+    if (!palabraAnterior || !palabraAnterior.classList.contains("incorrecta")) {
         return;
     }
 
     indiceActual -= 1;
-    barraProgreso.style.width = `${(indiceActual / oraciones.length) * 100}%`;
-    dibujarTexto();
-    actualizarLetrasOracionActual();
+    palabraAnterior.classList.remove("correcta", "incorrecta");
+    palabraAnterior.querySelectorAll(".letra").forEach((letra) => {
+        letra.classList.remove("correcta", "incorrecta", "cursor");
+    });
+
+    rachaActual = 0;
+    actualizarRacha();
+
+    barraProgreso.style.width = `${(indiceActual / palabras.length) * 100}%`;
+    marcarPalabraActual();
 }
 
 entrada.addEventListener("input", (evento) => {
@@ -141,7 +182,12 @@ entrada.addEventListener("input", (evento) => {
         iniciarCuentaRegresiva();
     }
 
-    actualizarLetrasOracionActual();
+    if (evento.target.value.endsWith(" ")) {
+        procesarPalabra();
+        return;
+    }
+
+    actualizarLetrasPalabraActual();
 });
 
 entrada.addEventListener("keydown", (evento) => {
@@ -152,14 +198,15 @@ entrada.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
         evento.preventDefault();
         if (entrada.value.trim().length > 0) {
-            procesarOracion();
+            entrada.value += " ";
+            entrada.dispatchEvent(new Event("input"));
         }
         return;
     }
 
     if (evento.key === "Backspace" && entrada.value.length === 0 && indiceActual > 0) {
         evento.preventDefault();
-        retrocederOracion();
+        retrocederPalabra();
     }
 });
 
