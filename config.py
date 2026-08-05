@@ -1,13 +1,16 @@
+import os
+from dotenv import load_dotenv
 import pymysql
 from pymysql.cursors import DictCursor
 
-# Ajusta estos datos segun tu instalacion de MySQL
+load_dotenv()
+
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "root",
-    "database": "mecanografia_db",
-    "port": 3306,
+    "host": os.environ.get("MYSQLHOST", "localhost"),
+    "user": os.environ.get("MYSQLUSER", "root"),
+    "password": os.environ.get("MYSQLPASSWORD", "123"),
+    "database": os.environ.get("MYSQLDATABASE", "mecanografia_db"),
+    "port": int(os.environ.get("MYSQLPORT", 3306)),
     "cursorclass": DictCursor,
 }
 
