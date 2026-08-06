@@ -35,27 +35,92 @@ def login():
         return redirect(url_for("menu"))
     return render_template("login.html")
 
-
 @app.route("/login", methods=["POST"])
 def procesar_login():
     usuario = request.form.get("usuario", "").strip()
     contrasena = request.form.get("contrasena", "")
 
     conexion = get_connection()
+
     try:
         with conexion.cursor() as cursor:
-            cursor.execute("SELECT * FROM Usuario WHERE usuario = %s", (usuario,))
+
+            # Buscar usuario
+            cursor.execute(
+                "SELECT * FROM Usuario WHERE usuario = %s",
+                (usuario,)
+            )
             fila = cursor.fetchone()
+
+            # Usuario no existe
+            if not fila:
+                flash("Usuario o contraseña incorrectos")
+                return redirect(url_for("login"))
+
+            # Cuenta bloqueada
+            if fila["cuenta_bloqueada"]:
+                flash("La cuenta está bloqueada por exceder los 4 intentos permitidos.")
+                return redirect(url_for("login"))
+
+            # Contraseña correcta
+            if check_password_hash(fila["contrasena"], contrasena):
+
+                cursor.execute(
+                    """
+                    UPDATE Usuario
+                    SET intentos_fallidos = 0
+                    WHERE id = %s
+                    """,
+                    (fila["id"],)
+                )
+
+                conexion.commit()
+
+                session["usuario_id"] = fila["id"]
+                session["usuario"] = fila["usuario"]
+
+                return redirect(url_for("menu"))
+
+            # Contraseña incorrecta
+            intentos = fila["intentos_fallidos"] + 1
+
+            if intentos >= 4:
+
+                cursor.execute(
+                    """
+                    UPDATE Usuario
+                    SET intentos_fallidos = %s,
+                        cuenta_bloqueada = TRUE
+                    WHERE id = %s
+                    """,
+                    (intentos, fila["id"])
+                )
+
+                conexion.commit()
+
+                flash("Cuenta bloqueada por exceder los 4 intentos fallidos.")
+
+                return redirect(url_for("login"))
+
+            else:
+
+                cursor.execute(
+                    """
+                    UPDATE Usuario
+                    SET intentos_fallidos = %s
+                    WHERE id = %s
+                    """,
+                    (intentos, fila["id"])
+                )
+
+                conexion.commit()
+
+                flash(f"Usuario o contraseña incorrectos. Intento {intentos} de 4.")
+
+                return redirect(url_for("login"))
+
     finally:
         conexion.close()
-
-    if fila and check_password_hash(fila["contrasena"], contrasena):
-        session["usuario_id"] = fila["id"]
-        session["usuario"] = fila["usuario"]
-        return redirect(url_for("menu"))
-
-    flash("Usuario o contraseña incorrectos")
-    return redirect(url_for("login"))
 
 
 @app.route("/registro", methods=["GET", "POST"])
