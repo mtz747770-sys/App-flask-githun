@@ -74,6 +74,32 @@ function iniciarCuentaRegresiva() {
     }, 1000);
 }
 
+function mostrarResultadoConAnimal(wpm, animalInfo) {
+    // Actualizar el WPM
+    valorWpm.textContent = wpm;
+    
+    // Crear el contenido con la imagen y mensaje del animal
+    const tarjetaResultado = document.querySelector(".tarjeta-resultado");
+    
+    // Crear elemento para la imagen del animal
+    const imagenAnimal = document.createElement("div");
+    imagenAnimal.className = "imagen-animal";
+    imagenAnimal.innerHTML = `
+        <img src="${animalInfo.imagen}" alt="${animalInfo.animal}" class="animal-img">
+        <p class="nombre-animal">${animalInfo.emoji} ${animalInfo.animal}</p>
+    `;
+    
+    // Crear elemento para el mensaje
+    const mensajeAnimal = document.createElement("p");
+    mensajeAnimal.className = "mensaje-animal";
+    mensajeAnimal.textContent = animalInfo.mensaje;
+    
+    // Insertar la imagen y mensaje antes del botón
+    const botonVolver = tarjetaResultado.querySelector(".boton");
+    tarjetaResultado.insertBefore(mensajeAnimal, botonVolver);
+    tarjetaResultado.insertBefore(imagenAnimal, botonVolver);
+}
+
 function finalizarPrueba() {
     if (pruebaTerminada) return;
     pruebaTerminada = true;
@@ -85,13 +111,28 @@ function finalizarPrueba() {
     const minutos = segundosUsados > 0 ? segundosUsados / 60 : 1 / 60;
     const palabrasPorMinuto = Math.round(palabrasCorrectas / minutos);
 
-    valorWpm.textContent = palabrasPorMinuto;
     pantallaResultado.classList.add("visible");
 
+    // Enviar resultado y obtener información del animal
     fetch("/guardar_resultado", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ velocidad: palabrasPorMinuto }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Mostrar el resultado con la información del animal
+        mostrarResultadoConAnimal(palabrasPorMinuto, {
+            animal: data.animal,
+            emoji: data.emoji,
+            imagen: data.imagen,
+            mensaje: data.mensaje
+        });
+    })
+    .catch(error => {
+        console.error("Error al guardar resultado:", error);
+        // Mostrar al menos el WPM aunque falle
+        valorWpm.textContent = palabrasPorMinuto;
     });
 }
 

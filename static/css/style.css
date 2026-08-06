@@ -526,3 +526,96 @@ h1 {
 .oculto {
     display: none !important;
 }
+
+/* Estilos para la imagen y mensaje del animal */
+
+.imagen-animal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem 0;
+    animation: aparecer 0.6s ease-out;
+}
+
+.animal-img {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    animation: botar 0.8s ease-in-out;
+}
+
+.nombre-animal {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--acento);
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.mensaje-animal {
+    font-size: 1.1rem;
+    color: var(--texto-tenue);
+    text-align: center;
+    margin: 1.5rem 0;
+    line-height: 1.6;
+    animation: deslizar 0.8s ease-out 0.3s both;
+}
+
+/* Animaciones para el animal */
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes botar {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes deslizar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .animal-img {
+        width: 120px;
+        height: 120px;
+    }
+
+    .nombre-animal {
+        font-size: 1.3rem;
+    }
+
+    .mensaje-animal {
+        font-size: 1rem;
+    }
+
+    .tarjeta-resultado {
+        padding: 32px 24px;
+    }
+
+    .valor-resultado {
+        font-size: 48px;
+    }
+}

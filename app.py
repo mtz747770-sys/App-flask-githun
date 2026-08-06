@@ -29,11 +29,39 @@ def login_requerido(vista):
     return envoltura
 
 
+def obtener_animal_segun_velocidad(ppm):
+    """
+    Retorna información del animal según la velocidad en palabras por minuto
+    """
+    if ppm < 30:
+        return {
+            'nombre': 'Caracol',
+            'emoji': '🐢',
+            'imagen': '/static/images/caracol.png',
+            'mensaje': '¡Sigue practicando! Vas a mejorar mucho 🐢'
+        }
+    elif ppm >= 31 and ppm <= 60:
+        return {
+            'nombre': 'Liebre',
+            'emoji': '🐰',
+            'imagen': '/static/images/liebre.png',
+            'mensaje': '¡Muy bien! Vas a buen ritmo 🐰'
+        }
+    else:  # ppm > 60
+        return {
+            'nombre': 'Chita',
+            'emoji': '🐆',
+            'imagen': '/static/images/chita.png',
+            'mensaje': '¡INCREÍBLE! ¡Eres muy rápido! 🐆'
+        }
+
+
 @app.route("/")
 def login():
     if "usuario_id" in session:
         return redirect(url_for("menu"))
     return render_template("login.html")
+
 
 @app.route("/login", methods=["POST"])
 def procesar_login():
@@ -271,7 +299,16 @@ def guardar_resultado():
     finally:
         conexion.close()
 
-    return jsonify({"ok": True})
+    # Obtener información del animal según la velocidad
+    animal_info = obtener_animal_segun_velocidad(velocidad)
+
+    return jsonify({
+        "ok": True,
+        "animal": animal_info['nombre'],
+        "emoji": animal_info['emoji'],
+        "imagen": animal_info['imagen'],
+        "mensaje": animal_info['mensaje']
+    })
 
 
 if __name__ == "__main__":
